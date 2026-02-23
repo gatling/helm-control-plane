@@ -1,0 +1,20 @@
+apiVersion: v2
+appVersion: "1.0"
+version: 1.0.4
+name: enterprise-locations-packages
+description: Official Gatling Enterprise Helm chart for Private Locations & Packages
+home: https://gatling.io
+icon: https://helm.gatling.io/gatling.png
+maintainers:
+  - name: "Karim Atwa"
+    email: "katwa@gatling.io"
+sources:
+  - "https://github.com/gatling/helm-control-plane/tree/main/helm-chart"
+keywords:
+  - load-testing
+  - smoke-testing
+  - stress-testing
+  - capacity-testing
+  - soak-testing
+  - distributed-testing
+  - kubernetes

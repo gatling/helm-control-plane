@@ -1,0 +1,389 @@
+replicaCount: 1
+# Kubernetes namespace where resources will be created.
+namespace: gatling
+# ----------------------------------------------------------------------
+# CONTROL PLANE SETTINGS
+# ----------------------------------------------------------------------
+controlPlane:
+  # Name used for the Control Plane Deployment.
+  name: gatling-cp
+  # Human-readable description for the Control Plane.
+  description: My K8s control plane description
+  # Build your own sources on the control plane (specify builder image, activate private packages & configure your env variables GIT_USERNAME & GIT_TOKEN, ref: https://docs.gatling.io/reference/run-tests/build-from-sources/).
+  builder:
+    enabled: false
+    cloneOver: https
+  # ServiceAccount configuration: create set to true (create a new ServiceAccount with the given name.), or false (assume an existing ServiceAccount with the given name.)
+  serviceAccount:
+    create: true
+    name: "gatling-cp-service-account"
+  image:
+    # Docker image for the Control Plane container (For build from sources, use the dedicated image: "gatlingcorp/control-plane:latest-builder").
+    name: gatlingcorp/control-plane:latest
+    # How to pull the image (Always, IfNotPresent, Never).
+    pullPolicy: Always
+    # List of existing Kubernetes Secrets to pull images from private registries.
+    pullSecrets: []
+  # Additional labels to be added to the Control Plane Deployment resource.
+  deploymentLabels: {}
+  # Additional labels to be added to the Control Plane Pods.
+  podLabels: {}
+  # List of init containers that run before the main Control Plane container starts.
+  initContainers: []
+  # Environment variables injected into the Control Plane container.
+  env:
+    # Referencing a Kubernetes Secret to retrieve the Control Plane token.
+    - name: CONTROL_PLANE_TOKEN # DO NOT CHANGE
+      valueFrom:
+        secretKeyRef:
+          name: gatling-enterprise
+          key: api-token
+    # Builder HTTPS clone environment variables GIT_USERNAME & GIT_TOKEN, ref: https://docs.gatling.io/reference/run-tests/build-from-sources/.
+    # - name: GIT_USERNAME # DO NOT CHANGE
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: git-https-auth
+    #       key: username
+    # - name: GIT_TOKEN # DO NOT CHANGE
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: git-https-auth
+    #       key: token
+  # Override the default container entrypoint command if needed.
+  command: []
+  # Add additional arguments to the container if needed.
+  args: []
+  # Defines volumes for the Pod (e.g., configMaps, secrets, persistent volumes).
+  volumes: []
+  # Mount points for the volumes specified above.
+  volumeMounts: []
+  # Custom CA certificates support
+  # When configured, enables the Control Plane to trust custom Certificate Authorities
+  # Useful to trust private/internal services for private Git repositories, npm registries, Maven repositories, etc.
+  customCACertificates:
+    # Name of Kubernetes ConfigMap containing PEM-formatted CA certificates
+    # Leave empty to disable custom CA certificate support
+    # Create the ConfigMap in the same namespace configured above (see 'namespace' setting)
+    # Create with: kubectl -n <namespace> create configmap <configmap-name> --from-file=ca.pem=/path/to/certs.pem
+    configName: ""
+    # Key within the ConfigMap containing the PEM certificate file (default: ca.pem)
+    pemKey: "ca.pem"
+  # Constrains Pods to nodes that match these key-value labels.
+  nodeSelector: {}
+  # Affinity rules (e.g., nodeAffinity, podAffinity, or podAntiAffinity).
+  affinity: {}
+  # Tolerations let Pods be scheduled on nodes with matching taints.
+  tolerations: []
+  # Resource requests and limits for the Control Plane container.
+  # Align requests with limits for consistent performance. QoS class: Guaranteed.
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+  # Security context for running the pod with specific privileges or user IDs.
+  securityContext: {}
+  # Security context for running the container with specific privileges or user IDs.
+  containerSecurityContext: {}
+  # enterpriseCloud:                              # Setup the proxy configuration for the control plane, reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+  #   proxy:
+  #     forward:                                  # Forward Proxy URL
+  #       url: "http://control-plane-forward-proxy/gatling"
+  #     http:                                     # HTTP Proxy URL with defined port
+  #       url: "http://control-plane-http-proxy:3128"
+  #       noproxy: "example.com,other.com"        # comma-separated list of hosts for which not to use a proxy (e.g: private repository domain, optional), see https://curl.se/docs/manpage.html#--noproxy
+  #       credentials:                            # mount the credentials as environment variables
+  #         username:
+  #           env: PROXY_USERNAME
+  #           secretName: "your secret name"
+  #           key: "your key for the username"
+  #         password:
+  #           env: PROXY_PASSWORD
+  #           secretName: "<the name of your secret>"
+  #           key: "<your key for the username>"
+  #     truststore:
+  #       path: "/path/to/truststore.pem"         # absolute path to a file containing the certificates in PEM format (can contains multiple concatenated PEM certificates)      
+  #     keystore:
+  #       path: "/path/to/truststore.pem"         # absolute path to a file containing the key and its certificate in PKCS12 format
+  #       password:                               # optional password if needed to open the keystore
+  #         env: KEYSTORE_PASSWORD
+  #         secretName: "<the name of your secret>"
+  #         key: "<your key for the username>"
+  # AWSroleARN: "arn:aws:iam::<AccountId>:role/<Role-Name>" # Optional AWS IAM role ARN for the Control Plane, used to access AWS resources.
+  # AzureClientID: "<ClientId>" # Optional Azure Identity client ID for the Control Plane, used to access Azure resources.
+  # GCPServiceAccount: "<ServiceAccount>" # Optional GCP service account for the Control Plane, used to access GCP resources.
+
+# ----------------------------------------------------------------------
+# PRIVATE LOCATIONS
+# ----------------------------------------------------------------------
+privateLocations:
+  # Kubernetes Private Location configuration
+  # Reference: https://docs.gatling.io/reference/install/cloud/private-locations/kubernetes/configuration/#control-plane-configuration-file
+  - id: "prl_kubernetes"                            # Unique identifier for the private location, must be prefixed by prl_, only consist of numbers 0-9, lowercase letters a-z, and underscores, with a max length of 30 characters
+    description: "Private Location on Kubernetes"   # Short description
+    type: "kubernetes"                              # The type of private location
+    engine: "classic"                               # The execution engine type (e.g., "classic", "javascript")
+    image:
+      type: "certified"                             # Image type: certified (hosted on DockerHub, and available for the linux/amd64 and linux/arm64 platforms) or custom (You can build your own images from https://github.com/gatling/frontline-injector-docker-image)
+    #   java: "latest"                              # For classic engine; no-op for javascript
+    #   image: "gatlingcorp/classic-openjdk:latest" # Custom image name
+    # context: "test"                              # Context name (optional, default based on current-context kubernetes configuration)
+    # systemProperties:                             # System properties for the JVM (supports secret references)
+    #   "direct.prop": "direct-value"               # Direct value
+    #   "secret.prop":                              # Value from Kubernetes secret
+    #     env: MY_SECRET_PROP
+    #     secretName: my-secrets
+    #     key: prop-key
+    # javaHome: "/usr/lib/jvm/zulu"                 # Java home path
+    # jvmOptions: ["-Xmx4G", "-Xms512M"]
+    # keepLoadGeneratorAlive: false                 # Whether to keep the load generator alive (for debugging - Do not forget to delete ghost pods.)
+    # enterpriseCloud:                              # Setup the proxy configuration for the private location, reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+    #   proxy:
+    #     forward:                                  # Forward Proxy URL
+    #       url = "http://private-location-forward-proxy/gatling"
+    #     http:                                     # HTTP Proxy URL with defined port
+    #       url: "http://private-location-http-proxy:3128"
+    #       noproxy: "example.com,other.com"        # comma-separated list of hosts for which not to use a proxy (e.g: private repository domain, optional), see https://curl.se/docs/manpage.html#--noproxy
+    #       credentials:                            # mount the credentials as environment variables
+    #         username:
+    #           env: PROXY_USERNAME
+    #           secretName: "your secret name"
+    #           key: "your key for the username"
+    #         password:
+    #           env: PROXY_PASSWORD
+    #           secretName: "<the name of your secret>"
+    #           key: "<your key for the username>"
+    #     truststore:
+    #       path: "/path/to/truststore.pem"         # absolute path to a file containing the certificates in PEM format (can contains multiple concatenated PEM certificates)      
+    #     keystore:
+    #       path: "/path/to/truststore.pem"         # absolute path to a file containing the key and its certificate in PKCS12 format
+    #       password:                               # optional password if needed to open the keystore
+    #         env: KEYSTORE_PASSWORD
+    #         secretName: "<the name of your secret>"
+    #         key: "<your key for the username>"
+
+    # Kubernetes Job spec for the load generator
+    job:
+      spec:
+        template:
+          metadata:
+            # Additional annotation to be added to the Location Pods.
+            annotations: {}
+            # Additional labels to be added to the Location Pods.
+            labels: {}
+            # Kubernetes namespace where Locations will be created.
+            namespace: gatling
+          spec:
+            # serviceAccountName: "location-service-account"
+            containers:
+              - name: gatling-container
+                # Environment variables injected into the Location container(s).
+                env: []
+                # Volumes mounted into the Location container(s).
+                volumeMounts: []
+                # Resource requests and limits for the Location container(s).
+                # Align requests with limits for consistent performance. QoS class: Guaranteed.
+                resources:
+                  requests:
+                    memory: "2Gi"
+                    cpu: "2"
+                  limits:
+                    memory: "2Gi"
+                    cpu: "2"
+            imagePullSecrets: []  # List of existing Kubernetes Secrets to pull images from private registries.
+            securityContext: {} # Security context for running the container with specific privileges or user IDs.
+            volumes: []
+        ttlSecondsAfterFinished: 60
+# AWS Private Location configuration
+# Reference: https://docs.gatling.io/reference/install/cloud/private-locations/aws/configuration/#control-plane-configuration-file
+# - id: "prl_kubernetes_aws"                 # Unique identifier for the private location, must be prefixed by prl_, only consist of numbers 0-9, lowercase letters a-z, and underscores, with a max length of 30 characters
+#   description: "Private Location on AWS"   # Brief description of the AWS location
+#   type: "aws"                              # Location type (AWS)
+#   region: "eu-west-3"                      # AWS region where the instance will run
+#   engine: "classic"                        # Execution engine type (e.g., "classic" or "javascript")
+#   ami:
+#     type: "certified"                      # AMI image type: certified (hosted on DockerHub, and available for the linux/amd64 and linux/arm64 platforms) or custom (You can build your own images from https://github.com/gatling/frontline-injector-docker-image)
+#     # java: "latest"                       # (Optional) Java version for the classic engine; no effect for javascript engine
+#     # id: "ami-id"                         # (Required if using custom AMI) Custom AMI identifier
+#   securityGroups: ["sg-id"]                # List of AWS security group IDs to attach to the instance
+#   instanceType: "c7i.xlarge"               # AWS instance type specification
+#   # spot: false                            # (Optional) Set to true to use spot instances instead of on-demand
+#   subnets: ["subnet-a"]                    # List of subnet IDs for network placement
+#   # autoAssociatePublicIPv4: true          # (Optional) Whether to automatically assign a public IPv4; defaults to true if omitted
+#   # elasticIps: ["0.0.0.0", "0.0.0.0"]     # (Optional) Specify static elastic IPs if public IP auto-association is disabled
+#   # profileName: "my-aws-profile"          # (Optional) AWS CLI profile to use for the API calls
+#   # iamInstanceProfile: "my-iam-instance-profile"  # (Optional) IAM instance profile name for the instance
+#   # tags: {}                               # (Optional) Global tags applied to all AWS resources created
+#   # tagsFor:                               # (Optional) Specific tags for different AWS resource types
+#   #   instance: {}
+#   #   volume: {}
+#   #   network-interface: {}
+#   # systemProperties:                      # (Optional) Additional system properties for the AWS location (supports secret references)
+#   #   "direct.prop": "direct-value"        # Direct value
+#   #   "secret.prop":                       # Value from Kubernetes secret
+#   #     env: MY_SECRET_PROP
+#   #     secretName: my-secrets
+#   #     key: prop-key
+#   # javaHome: "/usr/lib/jvm/zulu"          # (Optional) Custom JAVA_HOME path
+#   # jvmOptions: ["-Xmx4G", "-Xms512M"]     # (Optional) JVM options for tuning performance
+#   # enterpriseCloud:
+#     #   Setup the proxy configuration for the private location
+#     #   Reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+#
+# Azure Private Location configuration
+# Reference: https://docs.gatling.io/reference/install/cloud/private-locations/azure/configuration/#control-plane-configuration-file
+# - id: "prl_kubernetes_azure"               # Unique identifier for the private location, must be prefixed by prl_, only consist of numbers 0-9, lowercase letters a-z, and underscores, with a max length of 30 characters
+#   description: "Private Location on Azure" # Brief description of the Azure location
+#   type: "azure"                            # Location type (Azure)
+#   region: "westeurope"                     # Azure region (location name)
+#   size: "Standard_A4_v2"                   # Virtual machine size according to Azure specifications
+#   engine: "classic"                        # Execution engine type
+#   image:
+#     type: "certified"                      # Image type: certified (hosted on DockerHub, and available for the linux/amd64 and linux/arm64 platforms) or custom (You can build your own images from https://github.com/gatling/frontline-injector-docker-image)
+#     # java: "latest"                       # (Optional) Java version setting for the classic engine; ignored for javascript engine
+#     # image: "/subscriptions/.../customImages/images/<MyImage>"  # (Optional) Custom image path for user-provided images
+#   subscription: "<SubscriptionId>"         # Azure subscription ID for resource management
+#   networkId: "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.Network/virtualNetworks/<VirtualNetwork>"
+#   subnetName: "subnet-name"                # Name of the subnet within the specified virtual network
+#   # associatePublicIp: true                # (Optional) Whether to assign a public IP to the VM
+#   # tags: {}                               # (Optional) Custom tags for the Azure VM
+#   # systemProperties:                      # (Optional) Additional system properties for the Azure location (supports secret references)
+#   #   "direct.prop": "direct-value"        # Direct value
+#   #   "secret.prop":                       # Value from Kubernetes secret
+#   #     env: MY_SECRET_PROP
+#   #     secretName: my-secrets
+#   #     key: prop-key
+#   # javaHome: "/usr/lib/jvm/zulu"          # (Optional) Custom JAVA_HOME path
+#   # jvmOptions: ["-Xmx4G", "-Xms512M"]     # (Optional) Custom JVM options for performance tuning
+#   # enterpriseCloud:
+#     #   Setup the proxy configuration for the private location
+#     #   Reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+#
+# GCP Private Location configuration
+# Reference: https://docs.gatling.io/reference/install/cloud/private-locations/gcp/configuration/#control-plane-configuration-file
+# - id: "prl_kubernetes_gcp"                 # Unique identifier for the private location, must be prefixed by prl_, only consist of numbers 0-9, lowercase letters a-z, and underscores, with a max length of 30 characters
+#   description: "Private Location on GCP"   # Brief description of the GCP location
+#   type: "gcp"                              # Location type (GCP)
+#   project: "project-id"                    # Your GCP project ID
+#   zone: "europe-west3-a"                   # GCP zone where the instance will be deployed
+#   # instanceTemplate: "example-template"   # (Optional) Pre-defined instance template to use instead of manual configuration
+#   machine:
+#     type: "c3-highcpu-4"                   # GCP machine type; refer to gcloud for available options
+#     engine: "classic"                      # Execution engine type (e.g., "classic" or "javascript")
+#     # preemptible: false                   # (Optional) Set to true for using preemptible instances to reduce costs
+#     image:
+#       type: "certified"                    # Image type: certified (hosted on DockerHub, and available for the linux/amd64 and linux/arm64 platforms) or custom (You can build your own images from https://github.com/gatling/frontline-injector-docker-image)
+#       java: "latest"                       # (Optional) Java version for the image if required by your workload
+#       # id: "image-id"                     # (Optional) Custom image ID to use
+#       # project: "project-id"              # (Optional) Specify project if using a custom image from a different project
+#       # family: "image-family"             # (Optional) Image family to select the appropriate image version
+#     disk:
+#       sizeGb: 20                           # Disk size in GB; ensure it meets your storage needs
+#     # network-interface:                   # (Optional) Network interface configuration for advanced networking setups
+#     #   network: "gatling-network"         # (Optional) Name of the GCP network to use
+#     #   subnetwork: "gatling-subnetwork-europe-west3"  # (Optional) Specific subnetwork within the network
+#     #   with-external-ip: true             # (Optional) Set to true to assign an external IP address
+#   # systemProperties:                      # (Optional) Additional system properties for the GCP location (supports secret references)
+#   #   "direct.prop": "direct-value"        # Direct value
+#   #   "secret.prop":                       # Value from Kubernetes secret
+#   #     env: MY_SECRET_PROP
+#   #     secretName: my-secrets
+#   #     key: prop-key
+#   # javaHome: "/usr/lib/jvm/zulu"          # (Optional) Custom JAVA_HOME path
+#   # jvmOptions: ["-Xmx4G", "-Xms512M"]     # (Optional) JVM options for performance tuning
+#   # enterpriseCloud:
+#     #   Setup the proxy configuration for the private location
+#     #   Reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+#
+# Dedicated machine Private Location configuration
+# Reference: https://docs.gatling.io/reference/deploy/private-locations/dedicated/configuration/
+# - id: "prl_dedicated"                          # Unique identifier for the private location, must be prefixed by prl_, only consist of numbers 0-9, lowercase letters a-z, and underscores, with a max length of 30 characters
+#   description: "Private Location on dedicated machines"  # Brief description of the dedicated location
+#   type: "dedicated"                            # Location type (dedicated machine)
+#   engine: "classic"                            # Execution engine type (e.g., "classic" or "javascript")
+#   hosts:                                       # List of hostnames or IP addresses of the dedicated machines
+#     - "192.168.1.10"
+#     - "192.168.1.11"
+#   # workingDirectory: "/tmp"                   # (Optional) Working directory on the remote machines (default: /tmp)
+#   ssh:
+#     user: "gatling"                            # SSH user account name
+#     privateKey:
+#       path: "/path/to/private-key"             # Path to the SSH private key file (mounted in the control plane)
+#       # password:                              # (Optional) Private key password, supports secret reference
+#       #   env: SSH_KEY_PASSWORD
+#       #   secretName: ssh-secrets
+#       #   key: key-password
+#     # port: 22                                 # (Optional) SSH port (default: 22)
+#     # connectionTimeout: "15 seconds"          # (Optional) SSH connection timeout (default: 15 seconds)
+#   # systemProperties:                          # (Optional) Additional system properties for the dedicated location (supports secret references)
+#   #   "direct.prop": "direct-value"            # Direct value
+#   #   "secret.prop":                           # Value from Kubernetes secret
+#   #     env: MY_SECRET_PROP
+#   #     secretName: my-secrets
+#   #     key: prop-key
+#   # javaHome: "/usr/lib/jvm/zulu"              # (Optional) Custom JAVA_HOME path
+#   # jvmOptions: ["-Xmx4G", "-Xms512M"]         # (Optional) JVM options for performance tuning
+#   # keepLoadGeneratorAlive: false              # (Optional) Whether to keep the load generator alive (for debugging)
+#   # enterpriseCloud:
+#     #   Setup the proxy configuration for the private location
+#     #   Reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
+#
+# ----------------------------------------------------------------------
+# PRIVATE PACKAGE SETTINGS
+# ----------------------------------------------------------------------
+privatePackage:
+  # Enable or disable the private package repository feature.
+  enabled: false
+  repository:
+    # Directory where files will be uploaded temporarily
+    # upload:
+    #   directory: "/tmp"
+    # server:
+    #   # Port on which the repository server listens
+    #   port: 8080
+    #   # Bind address for the server
+    #   bindAddress: "0.0.0.0"
+    #   # SSL certificate configuration
+    #   certificate:
+    #     path: "/path/to/certificate.p12"
+    #     password: "password"
+    service:
+      # Service type on which you expose the control plane pod
+      type: NodePort
+      ports:
+        - name: http
+          protocol: TCP
+          # Port on which the Service listens
+          port: 80
+          # Port on which the repository server listens
+          targetPort: 8080
+    # Repository backend: "filesystem", "aws", "azure", or "gcp".
+    type: "filesystem"
+    configurations:
+      aws:
+        bucket: "bucket-name"
+        path: "folder/to/upload"
+      azure:
+        storage-account: "storage-account-name"
+        container: "container-name"
+        path: "folder/to/upload"
+      gcp:
+        bucket: "bucket-name"
+        path: "folder/to/upload"
+        project: "project-name"
+      filesystem:
+        directory: "/data/gatling-repository"
+        location:
+          download-base-url: "http://www.example.com:8080"
+
+  # PersistentVolumeClaim configuration — only required if using 'repository.type = filesystem'.
+  persistentVolumeClaim:
+    # Storage class name for the PVC
+    storageClassName: ""
+    volumeMode: Filesystem
+    accessModes: ["ReadWriteOnce"]
+    storage: 5Gi
+    # Selector to match an existing PV (optional)
+    selector: {}

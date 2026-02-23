@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Helm Repository</title>
+    <link rel="icon" href="favicon.ico">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+      }
+      header {
+        background-color: #000000;
+        color: #ecf0f1;
+        padding: 20px;
+        text-align: center;
+      }
+      header img {
+        width: 100px;
+        vertical-align: middle;
+      }
+      header h1 {
+        display: inline-block;
+        margin: 0;
+        margin-left: 10px;
+        vertical-align: middle;
+        font-size: 24px;
+      }
+      main {
+        flex-grow: 1;
+        padding: 20px;
+        max-width: 800px;
+        margin: auto;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        border-bottom: 2px solid #bdc3c7;
+        padding-bottom: 10px;
+        color: #000000;
+      }
+      p {
+        line-height: 1.6;
+      }
+      pre {
+        background-color: #ecf0f1;
+        padding: 10px;
+        overflow-x: auto;
+      }
+      ul#file-list {
+        list-style-type: none;
+        padding: 0;
+      }
+      .chart-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #ecf0f1;
+      }
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chart-name {
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+      .chart-description {
+        color: #7f8c8d;
+        margin: 5px 0;
+      }
+      details {
+        margin-top: 5px;
+      }
+      summary {
+        cursor: pointer;
+        color: #2980b9;
+        font-size: 0.9em;
+      }
+      summary:hover {
+        text-decoration: underline;
+      }
+      .versions-list {
+        margin-top: 10px;
+        padding-left: 15px;
+        border-left: 2px solid #ecf0f1;
+      }
+      .version-item {
+        padding: 5px 0;
+        font-size: 0.9em;
+      }
+      .version-number {
+        font-weight: bold;
+        color: #2980b9;
+      }
+      .version-meta {
+        color: #7f8c8d;
+        font-size: 0.85em;
+      }
+      .version-download {
+        margin-left: 10px;
+        color: #2980b9;
+        text-decoration: none;
+        font-size: 0.85em;
+      }
+      .version-download:hover {
+        text-decoration: underline;
+      }
+      code {
+        background-color: #ecf0f1;
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+      footer {
+        text-align: center;
+        padding: 15px;
+        color: #7f8c8d;
+        background-color: #ecf0f1;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="gatling.png" alt="Gatling Logo">
+      <h1>{{PAGE_TITLE}}</h1>
+    </header>
+    <main>
+      <h2>Usage</h2>
+      <p>
+        Helm must be installed to use the charts. Please refer to
+        <a href="https://helm.sh/docs/" target="_blank">Helm's documentation</a> to get started.
+      </p>
+      <p>Once Helm is set up properly, add the repo as follows:</p>
+      <pre>helm repo add gatling {{HELM_REPO_URL}}</pre>
+      <p>You can then run <code>helm search repo gatling</code> to see the charts.</p>
+      <p>Chart documentation is available in
+        <a href="https://github.com/gatling/helm-control-plane/tree/main/helm-chart" target="_blank">Gatling's Helm chart GitHub repository</a>.
+      </p>
+      <h2>Available Charts</h2>
+      <ul id="file-list"></ul>
+    </main>
+    <footer>
+      &copy; <span id="year"></span> Gatling Corp.
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+
+      async function loadCharts() {
+        try {
+          const response = await fetch('index.yaml');
+          const text = await response.text();
+          const index = jsyaml.load(text);
+
+          const fileList = document.getElementById("file-list");
+
+          for (const [chartName, versions] of Object.entries(index.entries || {})) {
+            const latest = versions[0];
+            const latestUrl = latest.urls && latest.urls[0] ? latest.urls[0] : '#';
+
+            const li = document.createElement("li");
+            li.className = "chart-item";
+
+            let versionsHtml = '';
+            for (const v of versions) {
+              const downloadUrl = v.urls && v.urls[0] ? v.urls[0] : '#';
+              versionsHtml += `
+                <div class="version-item">
+                  <span class="version-number">v${v.version}</span>
+                  <span class="version-meta">
+                    (app: ${v.appVersion || 'N/A'}) - ${formatDate(v.created)}
+                  </span>
+                  <a href="${downloadUrl}" class="version-download">Download</a>
+                </div>
+              `;
+            }
+
+            li.innerHTML = `
+              <div class="chart-header">
+                <span class="chart-name">${chartName}</span>
+                <span>Latest: v${latest.version} <a href="${latestUrl}" class="version-download">Download</a></span>
+              </div>
+              <div class="chart-description">${latest.description || ''}</div>
+              <details>
+                <summary>Show all versions (${versions.length})</summary>
+                <div class="versions-list">
+                  ${versionsHtml}
+                </div>
+              </details>
+            `;
+            fileList.appendChild(li);
+          }
+        } catch (error) {
+          console.error("Error loading charts:", error);
+          document.getElementById("file-list").innerHTML =
+            "<li>Unable to load chart list. Please try again later.</li>";
+        }
+      }
+
+      loadCharts();
+    </script>
+  </body>
+</html>
