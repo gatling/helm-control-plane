@@ -1,0 +1,48 @@
+name: Helm CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Lint Helm Chart
+        run: helm lint .
+
+      - name: Validate Helm Templates
+        run: helm template . --debug --dry-run
+
+      - name: Setup kubeconform
+        uses: bmuschko/setup-kubeconform@v1
+
+      - name: Validate with kubeconform
+        run: |
+          for version in 1.28.0 1.29.0 1.30.0 1.31.0; do
+            echo "=== Validating against Kubernetes $version ==="
+            helm template . | kubeconform \
+              -kubernetes-version "$version" \
+              -strict \
+              -summary
+          done
+
+      - name: Package Helm chart
+        run: |
+          helm package ./ --destination ./packaged-charts/
+          echo "Packaged chart:"
+          ls -lh ./packaged-charts/
