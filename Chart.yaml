@@ -6,10 +6,10 @@ description: Official Gatling Enterprise Helm chart for Private Locations & Pack
 home: https://gatling.io
 icon: https://helm.gatling.io/gatling.png
 maintainers:
-  - name: "Karim Atwa"
-    email: "katwa@gatling.io"
+  - name: "Thomas Petillot"
+    email: "tpetillot@gatling.io"
 sources:
-  - "https://github.com/gatling/helm-control-plane/tree/main/helm-chart"
+  - "https://github.com/gatling/helm-control-plane"
 keywords:
   - load-testing
   - smoke-testing
