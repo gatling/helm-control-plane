@@ -62,6 +62,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GATLING_CI_TOKEN }}
 
       - name: Update Chart.yaml with version
         env:
