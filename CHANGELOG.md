@@ -1,1 +1,1 @@
-- Document `preferred` configuration for AWS private locations `spot` option.
+No changes
