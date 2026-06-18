@@ -219,6 +219,7 @@ jobs:
             ${{ steps.changelog.outputs.content }}
 
       - name: Reset Changelog
+        if: ${{ !contains(inputs.bump, 'milestone') }}
         run: |
           echo "No changes" > CHANGELOG.md
           git add CHANGELOG.md
