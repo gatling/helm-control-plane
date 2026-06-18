@@ -209,7 +209,7 @@ privateLocations:
 #     # id: "ami-id"                         # (Required if using custom AMI) Custom AMI identifier
 #   securityGroups: ["sg-id"]                # List of AWS security group IDs to attach to the instance
 #   instanceType: "c7i.xlarge"               # AWS instance type specification
-#   # spot: false                            # (Optional) Set to true to use spot instances instead of on-demand
+#   # spot: false                            # (Optional) Set to true to use Spot Instances instead of On-Demand Instances, or to "preferred" to prioritize Spot Instances and provision any remaining instances as On-Demand if Spot capacity is unavailable.
 #   subnets: ["subnet-a"]                    # List of subnet IDs for network placement
 #   # autoAssociatePublicIPv4: true          # (Optional) Whether to automatically assign a public IPv4; defaults to true if omitted
 #   # elasticIps: ["0.0.0.0", "0.0.0.0"]     # (Optional) Specify static elastic IPs if public IP auto-association is disabled
