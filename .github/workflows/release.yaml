@@ -31,7 +31,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Run Version Bump Action
         uses: gatling/internal-actions@version-bump/v1
@@ -61,7 +61,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.GATLING_CI_TOKEN }}
 
