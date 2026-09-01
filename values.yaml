@@ -139,6 +139,8 @@ privateLocations:
     # javaHome: "/usr/lib/jvm/zulu"                 # Java home path
     # jvmOptions: ["-Xmx4G", "-Xms512M"]
     # keepLoadGeneratorAlive: false                 # Whether to keep the load generator alive (for debugging - Do not forget to delete ghost pods.)
+    # skipCleanup: false                            # Skip run job deletion (for debugging - Do not forget to configure TTL after finished on job.)
+    # logStdout: false                              # Configure log appender on stdout (for debugging - Impact test performances.)
     # enterpriseCloud:                              # Setup the proxy configuration for the private location, reference: https://docs.gatling.io/reference/install/cloud/private-locations/network/#configuring-a-proxy
     #   proxy:
     #     forward:                                  # Forward Proxy URL
