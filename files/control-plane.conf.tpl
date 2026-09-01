@@ -173,7 +173,11 @@ control-plane {
         {{- end }}
       }
     {{- end }}
-      debug.keep-load-generator-alive = {{ toJson (default false .keepLoadGeneratorAlive) }}
+      debug {
+        keep-load-generator-alive = {{ toJson (default false .keepLoadGeneratorAlive) }}
+        skip-cleanup = {{ toJson (default false .skipCleanup) }}
+        log-stdout = {{ toJson (default false .logStdout) }}
+      }
       system-properties {
       {{- range $key, $val := .systemProperties }}
         "{{ $key }}" = {{ include "hocon-value" $val }}
