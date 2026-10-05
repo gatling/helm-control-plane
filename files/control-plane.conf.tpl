@@ -1,6 +1,9 @@
 control-plane {
   token = ${?CONTROL_PLANE_TOKEN}
   description = {{ include "hocon-value" .Values.controlPlane.description }}
+  configuration {
+    scan = {{ toJson (default false .Values.controlPlane.configurationScan) }}
+  }
   {{- if and .Values.controlPlane.builder (default false .Values.controlPlane.builder.enabled) }}
   builder {
     git.global.credentials {

@@ -26,8 +26,11 @@ spec:
       {{- with .Values.controlPlane.podLabels }}
         {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- if not .Values.controlPlane.configurationScan }}
       annotations:
+        # Restart the pod on any configuration change, as the Control Plane doesn't hot-reload it
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
     spec:
       serviceAccountName: "{{ .Values.controlPlane.serviceAccount.name }}"
       {{- if .Values.controlPlane.securityContext }}

@@ -1,1 +1,2 @@
-No changes
+* Add `configurationScan` option to hot-reload the private locations and description without restarting the Control Plane, ref: https://docs.gatling.io/reference/deploy/private-locations/introduction/#configuration-hot-reload
+* ⚠️ Behaviour change: `configurationScan` is enabled by default, so a configuration change no longer restarts the Control Plane pod. Other configuration changes (e.g. proxy, private packages) are rejected by the Control Plane and require a `kubectl rollout restart`. Set `configurationScan: false` to restart the pod on any configuration change, as before.
